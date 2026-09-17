@@ -15,17 +15,12 @@ pkg install -y \
 mkdir -p "$HOME/workdir"
 mkdir -p "$HOME/bin"
 mkdir -p "$HOME/.config/nvim"
-mkdir -p "$HOME/.config/atuin"
 
 git clone https://github.com/akinomyoga/ble.sh.git "$HOME/workdir/ble.sh"
 cd "$HOME/workdir/ble.sh" && make install INSDIR="$HOME/.local/lib/blesh"
 
-curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
-
 cat <<- 'BASHRC' > "$HOME/.bashrc"
 # exports paths and other variables first
-source "$HOME/.atuin/bin/env"
-export ATUIN_NOBIND="true"
 export PATH="$PATH:$HOME/bin"
 export HISTTIMEFORMAT="%F %T "
 export HISTSIZE="100000"
@@ -36,8 +31,6 @@ then
   PS1='\[\033[1;37m\][`date +%H:%M:%S`]\[\033[1;36m\][\[\033[1;31m\]\u\[\033[1;33m\]@\[\033[1;32m\]\h:\[\033[1;35m\]\w\[\033[1;36m\]]\[\033[1;31m\]\\$\[\033[0m\] '
   shopt -s extglob
   source -- "$HOME/.local/lib/blesh/ble.sh" --attach=none
-  eval "$(atuin init bash)"
-  bind -x '"\C-q": __atuin_history'
   if [[ -f "$PREFIX/share/bash-completion/bash_completion" ]]; then
     source "$PREFIX/share/bash-completion/bash_completion"
   fi
@@ -84,15 +77,6 @@ set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 set list
 set mouse=
 INITVIM
-
-cat <<- 'ATUIN' > "$HOME/.config/atuin/config.toml"
-style = "full"
-enter_accept = true
-records = true
-auto_sync = true
-sync_frequency = 0
-sync_address = "http://<atuin-server>:8888"
-ATUIN
 
 cat <<- 'SCREENRC' > "$HOME/.screenrc"
 termcapinfo xterm* ti@:te@
