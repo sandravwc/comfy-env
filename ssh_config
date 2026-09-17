@@ -5,7 +5,7 @@ Host poco_f5_pro-phone-hyperos
 
 Host nothing_2-phone-nothingos
   HostName 192.168.1.100
-  User u0_a352
+  User u0_a353
   Port 8022
 
 Host matepad-tablet-harmonyos
