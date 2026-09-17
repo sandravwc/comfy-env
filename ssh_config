@@ -1,0 +1,24 @@
+Host poco_f5_pro-phone-hyperos
+  HostName 192.168.1.106
+  User u0_a356
+  Port 8022
+
+Host nothing_2-phone-nothingos
+  HostName 192.168.1.100
+  User u0_a352
+  Port 8022
+
+Host matepad-tablet-harmonyos
+  HostName 192.168.1.103
+  User u0_a167
+  Port 8022
+
+Host poco_f5_pro-proot-debian
+  HostName 192.168.1.106
+  User srv-admin
+  Port 8122
+  IdentityFile ~/.ssh/id_ed25519
+
+Host mrk-workstation-cachyos
+  HostName 192.168.1.105
+  User mrk
