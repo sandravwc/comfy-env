@@ -13,12 +13,6 @@ Host matepad-tablet-harmonyos
   User u0_a167
   Port 8022
 
-Host poco_f5_pro-proot-debian
-  HostName 192.168.1.106
-  User srv-admin
-  Port 8122
-  IdentityFile ~/.ssh/id_ed25519
-
 Host mrk-workstation-cachyos
   HostName 192.168.1.105
   User mrk
