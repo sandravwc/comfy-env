@@ -66,6 +66,7 @@ bleopt complete_auto_history=
 bleopt complete_ambiguous=
 bleopt prompt_eol_mark=''
 bleopt complete_menu_filter=
+bleopt history_share=1
 ble-import -d integration/fzf-completion
 ble-import -d integration/fzf-key-bindings
 BLESHRC
