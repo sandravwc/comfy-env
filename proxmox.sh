@@ -63,3 +63,5 @@ install -Dm0644 "$DIR/files/atuin.toml" /root/.config/atuin/config.toml
 
 install -Dm0644 "$DIR/files/screenrc" /root/.screenrc
 
+
+rm -rf /root/workdir/ble.sh

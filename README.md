@@ -21,8 +21,7 @@ Run as root, these pull from outside the distro repos. Read before executing:
 | `bat` 0.7.1, `fastfetch` 1.6.3 release binaries, fzf clone | pinned old versions, no repo package on EL7 | el7 |
 | CentOS 7 repos repointed to `vault.epel.cloud` | EL7 is EOL, mirrorlist is dead | el7 |
 
-The ble.sh clone is removed again at the end of each script, except `proxmox.sh`
-which leaves it in `/root/workdir/ble.sh`.
+The ble.sh clone is removed again at the end of each script.
 
 | script | target |
 |---|---|
