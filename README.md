@@ -59,12 +59,20 @@ Targets whose config is unique keep an inline heredoc: `el7` bashrc/motd,
 
 Optional command line tools. Nothing installs these; copy the ones you want.
 
-`newnote` and `notes2tldr` read the vault path from `$FOAM_VAULT` and refuse to
-run without it:
+### environment
+
+| variable | used by | meaning |
+|---|---|---|
+| `FOAM_VAULT` | `newnote`, `notes2tldr` | path to the notes vault. **Required**, no default; both refuse to run without it |
+| `CLAUDE_CONFIG_DIR` | `claude-sessions` | Claude Code config dir, default `~/.claude` |
+| `TEALDEER_CACHE_DIR`, `TEALDEER_CONFIG_DIR` | `notes2tldr` | honoured indirectly: page directories come from `tldr --show-paths`, so tealdeer's own config and env win |
 
 ```sh
 export FOAM_VAULT="$HOME/workdir/notes"   # in ~/.bashrc
 ```
+
+Anything that does not source `~/.bashrc` (cron, systemd, git hooks) needs
+`FOAM_VAULT` passed explicitly.
 
 ```sh
 install -m0755 bin/claude-sessions ~/.local/bin/
