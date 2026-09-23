@@ -1,12 +1,12 @@
 # comfy-env
 
 Shell environment bootstrap scripts: ble.sh, bashrc, nvim, atuin, screen, and a
-fastfetch login summary. Nothing touches `/etc/motd` or `update-motd.d`; it only
-drops a `/etc/profile.d/motd.sh` that runs fastfetch, so an interactive login
-shows the essentials.
-One script per target, shared config payloads in `files/`, optional user tools in `bin/`. Clone the repo and run
-the script for the box — it copies out of `files/` next to it, so it is not a
-single-file curl target any more.
+fastfetch login summary — a `/etc/profile.d/motd.sh`, not `/etc/motd` or
+`update-motd.d`.
+
+One script per target, shared config payloads in `files/`, optional user tools
+in `bin/`. Clone the repo and run the script for the box; it copies out of
+`files/` next to it, so it is not a single-file curl target any more.
 
 | script | target |
 |---|---|
