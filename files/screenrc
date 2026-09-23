@@ -1,5 +1,10 @@
 termcapinfo xterm* ti@:te@
 logfile "screenlog_%S.log"
 deflog on
-# Alt+Enter (ESC CR) -> Ctrl+J: newline in Claude Code instead of submit
-bindkey "^[^M" stuff "^J"
+# Alt+Enter (ESC CR) -> backslash+CR: Claude Code line continuation (newline) instead of submit
+bindkey "^[^M" stuff "\\\015"
+# Claude sends 24-bit colors (COLORTERM=truecolor), screen drops them unless enabled
+truecolor on
+# C-a h dumps the whole scrollback as rendered plain text (hardcopy.N in the window cwd)
+defscrollback 10000
+bind h hardcopy -h

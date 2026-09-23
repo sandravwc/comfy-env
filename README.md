@@ -60,7 +60,10 @@ back. A handful of shells over a few days turned 11k real entries into 1M
 
 ## screen
 
-`screenrc` maps Alt+Enter (ESC CR) to Ctrl+J, so Claude Code inserts a newline instead of submitting inside screen.
+`screenrc`:
+- Alt+Enter (ESC CR) is sent as backslash+CR, so Claude Code inserts a newline instead of submitting. For Shift+Enter, bind it to ESC CR in the terminal (Alacritty: `{ key = "Return", mods = "Shift", chars = "\u001B\r" }`).
+- `truecolor on`: screen drops 24-bit colors otherwise.
+- `C-a h` dumps the whole scrollback (10000 lines) as rendered plain text; the raw `screenlog_*.log` files keep escape codes.
 
 ## ble.sh completion quoting
 
