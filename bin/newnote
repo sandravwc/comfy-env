@@ -9,7 +9,7 @@ category is an orphan in the graph until its hub links it. This does both.
   newnote android/foo               android/foo.md + link in android.md
   newnote scratch                   scratch.md at the vault root, no hub
 
-Vault path: $FOAM_VAULT, else ~/workdir/notes.
+Vault path comes from $FOAM_VAULT (set it in ~/.bashrc).
 
 What it writes:
   - `title: <category>/<name>` frontmatter, matching the rest of the vault
@@ -24,7 +24,7 @@ duplicate node with the same label.
 import os
 import sys
 
-VAULT = os.environ.get("FOAM_VAULT", os.path.expanduser("~/workdir/notes"))
+VAULT = os.environ.get("FOAM_VAULT", "")
 
 
 def main():
@@ -37,6 +37,10 @@ def main():
     if args[0].startswith("-"):
         sys.exit(f"refusing to create a page named {args[0]!r}; "
                  "use -h for help")
+
+    if not VAULT:
+        sys.exit("FOAM_VAULT is not set; export it in ~/.bashrc, "
+                 "e.g. export FOAM_VAULT=\"$HOME/workdir/notes\"")
 
     rel = args[0].removesuffix(".md").strip("/")
     category, _, name = rel.rpartition("/")
