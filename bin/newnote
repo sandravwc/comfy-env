@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Create a page in the Foam vault with the conventions this vault expects.
+
+Foam resolves wikilinks and renders backlinks, but it does not generate the
+per-category index pages that Logseq namespaces used to, so a new page under a
+category is an orphan in the graph until its hub links it. This does both.
+
+  newnote 'cheat sheet/ffmpeg'      cheat sheet/ffmpeg.md + link in cheat sheet.md
+  newnote android/foo               android/foo.md + link in android.md
+  newnote scratch                   scratch.md at the vault root, no hub
+
+What it writes:
+  - `title: <category>/<name>` frontmatter, matching the rest of the vault
+  - a `- ` stub, because empty stubs are normal here
+  - `- [[<category>/<name>]]` appended to <category>.md, creating that hub if
+    the category is new
+
+Deliberately not added: a tag matching the category. Foam renders tags as graph
+nodes, so a `cheat sheet` tag on a page already in `cheat sheet/` shows up as a
+duplicate node with the same label.
+"""
+import os
+import sys
+
+VAULT = os.environ.get("FOAM_VAULT", os.path.expanduser("~/workdir/notes"))
+
+
+def main():
+    if len(sys.argv) != 2:
+        sys.exit(__doc__.strip().splitlines()[0] + "\n\nusage: newnote '<category>/<name>'")
+
+    rel = sys.argv[1].removesuffix(".md").strip("/")
+    category, _, name = rel.rpartition("/")
+    if not name:
+        sys.exit("empty page name")
+
+    page = os.path.join(VAULT, rel + ".md")
+    if os.path.exists(page):
+        sys.exit(f"exists already: {page}")
+
+    os.makedirs(os.path.dirname(page), exist_ok=True)
+    with open(page, "w") as fh:
+        fh.write(f"---\ntitle: {rel}\n---\n\n- \n")
+    print(f"created {rel}.md")
+
+    if not category:
+        print("root page, no hub to update")
+        return
+
+    hub = os.path.join(VAULT, category + ".md")
+    link = f"- [[{rel}]]"
+    if os.path.exists(hub):
+        body = open(hub).read()
+        if link in body:
+            print(f"{category}.md already links it")
+            return
+        if not body.endswith("\n"):
+            body += "\n"
+        open(hub, "w").write(body + link + "\n")
+        print(f"linked from {category}.md")
+    else:
+        open(hub, "w").write(f"---\ntitle: {category}\n---\n\n{link}\n")
+        print(f"created hub {category}.md")
+
+    print(f"\nnow: $EDITOR '{page}'")
+    print("then: git add -A && git commit && git push")
+
+
+if __name__ == "__main__":
+    main()
