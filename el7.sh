@@ -1,66 +1,84 @@
 #!/usr/bin/env bash
-# comfy bash env for Termux (native, no proot)
 
-pkg install -y \
-  neovim \
-  bash-completion \
-  bat \
-  fzf \
-  git \
-  make \
-  gawk \
-  fastfetch \
-  screen
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.epel.cloud|g' /etc/yum.repos.d/CentOS*
+yum install neovim bash-completion git -y
+yum install https://github.com/fastfetch-cli/fastfetch/releases/download/1.6.3/fastfetch-1.6.3-Linux.rpm -y
+wget -O bat.zip https://github.com/sharkdp/bat/releases/download/v0.7.1/bat-v0.7.1-x86_64-unknown-linux-musl.tar.gz && tar xzf bat.zip -C /usr/local/ && mv /usr/local/bat-v0.7.1-x86_64-unknown-linux-musl/bat /usr/local/bin/
+mkdir -p /root/workdir
+git clone https://github.com/akinomyoga/ble.sh.git /root/workdir/ble.sh
+cd /root/workdir/ble.sh && make install INSDIR=/usr/local/lib/blesh
+curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
 
-mkdir -p "$HOME/workdir"
-mkdir -p "$HOME/bin"
-mkdir -p "$HOME/.config/nvim"
-
-git clone https://github.com/akinomyoga/ble.sh.git "$HOME/workdir/ble.sh"
-cd "$HOME/workdir/ble.sh" && make install INSDIR="$HOME/.local/lib/blesh"
-
-cat <<- 'BASHRC' > "$HOME/.bashrc"
+cat <<- 'BASH_PROFILE' > /root/.bash_profile
 # exports paths and other variables first
-export PATH="$PATH:$HOME/bin"
+source "$HOME/.atuin/bin/env"
+export ATUIN_NOBIND="true"
+export PATH=$PATH:$HOME/bin
+export SYSTEMD_EDITOR=nvim
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 export HISTTIMEFORMAT="%F %T "
 export HISTSIZE="100000"
 shopt -s histappend
 PROMPT_COMMAND='history -a'
 export LS_OPTIONS='--color=auto'
+# and then aliases and such
+if [[ -f ~/.bashrc ]]; then
+  source ~/.bashrc
+fi
+BASH_PROFILE
 
+cat <<- 'BASHRC' > /root/.bashrc
 if [[ $- == *i* ]] # execute if in interactive shell
 then
   PS1='\[\033[1;37m\][`date +%H:%M:%S`]\[\033[1;36m\][\[\033[1;31m\]\u\[\033[1;33m\]@\[\033[1;32m\]\h:\[\033[1;35m\]\w\[\033[1;36m\]]\[\033[1;31m\]\\$\[\033[0m\] '
   shopt -s extglob
-  source -- "$HOME/.local/lib/blesh/ble.sh" --attach=none
-  if [[ -f "$PREFIX/share/bash-completion/bash_completion" ]]; then
-    source "$PREFIX/share/bash-completion/bash_completion"
-  fi
-  if [[ -f "$PREFIX/share/fzf/key-bindings.bash" ]]; then
-    source "$PREFIX/share/fzf/key-bindings.bash"
-  fi
+  source -- /usr/local/lib/blesh/ble.sh --attach=none
+  eval "$(atuin init bash)"
+  bind -x '"\C-q": __atuin_history'
+  [[ -f ~/.fzf.bash ]] && source ~/.fzf.bash
   alias cat='bat --style=plain --paging=never'
-fi
-
+  if [[ $PS1 && -f /usr/share/bash-completion/bash_completion ]]
+  then
+    source /usr/share/bash-completion/bash_completion
+  fi
+fi 
+  
 umask 022
-alias rm='rm -i'
-alias cp='cp -i'
-alias mv='mv -i'
 alias ls='ls $LS_OPTIONS'
 alias ll='ls $LS_OPTIONS -l'
 alias l='ls $LS_OPTIONS -lA'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias vi='nvim'
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
 
 if [[ $- == *i* ]] # execute if in interactive shell
 then
-  [[ ! ${BLE_VERSION-} ]] || ble-attach
-  fastfetch
+ [[ ! ${BLE_VERSION-} ]] || ble-attach
 fi
 BASHRC
 
-cat <<- 'BLESHRC' > "$HOME/.blerc"
+mkdir -p /root/.config/nvim
+cat <<- 'INITVIM' > /root/.config/nvim/init.vim
+set number
+set expandtab ts=2 sw=2 ai
+set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
+set list
+set mouse=
+INITVIM
+
+cat <<- 'MOTDSH' > /etc/profile.d/motd.sh
+#!/usr/bin/env bash
+fastfetch \
+  --logo none \
+  --structure kernel:os:packages:uptime:memory:cpu:disk:shell:localip:publicip
+MOTDSH
+
+cat <<- 'BLESHRC' > /root/.blerc
 ble-bind -f 'M-B' 'backward-cword'
 ble-bind -f 'M-F' 'forward-cword'
 bleopt complete_auto_complete=
@@ -127,15 +145,16 @@ ble-import -d integration/fzf-completion
 ble-import -d integration/fzf-key-bindings
 BLESHRC
 
-cat <<- 'INITVIM' > "$HOME/.config/nvim/init.vim"
-set number
-set expandtab ts=2 sw=2 ai
-set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
-set list
-set mouse=
-INITVIM
+cat <<- 'ATUIN' > "/root/.config/atuin/config.toml"
+style = "full"
+enter_accept = true
+records = true
+auto_sync = true
+sync_frequency = 0
+sync_address = "http://10.0.1.6:8888"
+ATUIN
 
-cat <<- 'SCREENRC' > "$HOME/.screenrc"
+cat <<- 'SCREENRC' > /root/.screenrc
 termcapinfo xterm* ti@:te@
 logfile "screenlog_%S.log"
 deflog on
@@ -143,4 +162,5 @@ deflog on
 bindkey "^[^M" stuff "^J"
 SCREENRC
 
-rm -rf "$HOME/workdir/ble.sh"
+rm -f /root/anaconda-ks.cfg /root/changelog.txt /root/original-ks.cfg /root/postinstall.sh /root/bat.zip
+rm -rf /root/workdir/ble.sh
