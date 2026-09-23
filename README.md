@@ -1,7 +1,7 @@
 # comfy-env
 
 Shell environment bootstrap scripts: ble.sh, bashrc, nvim, atuin, screen, motd.
-One script per target, shared config payloads in `files/`. Clone the repo and run
+One script per target, shared config payloads in `files/`, optional user tools in `bin/`. Clone the repo and run
 the script for the box — it copies out of `files/` next to it, so it is not a
 single-file curl target any more.
 
@@ -36,6 +36,22 @@ placeholder.
 
 Targets whose config is unique keep an inline heredoc: `el7` bashrc/motd,
 `proxmox` bashrc/motd, `termux` bashrc, `el-zfs` zpool-bar.
+
+## bin/
+
+Optional command line tools. Nothing installs these; copy the ones you want.
+
+```sh
+install -m0755 bin/claude-sessions ~/.local/bin/
+```
+
+| script | what | needs |
+|---|---|---|
+| `claude-sessions` | list every Claude Code session on the machine, newest first, with cwd and opening prompt -- `claude --resume` only offers sessions matching `$PWD` | python3 |
+| `imgtool` | pick an image with fd+fzf (chafa preview), then convert / resize / rename / open | fd, fzf, chafa, imagemagick |
+
+Server side utilities that every box of that type wants (`zpool-bar` on ZFS
+hosts) stay in their bootstrap script instead -- they are not optional there.
 
 ## history
 

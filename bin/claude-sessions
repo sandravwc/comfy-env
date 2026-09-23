@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""List every Claude Code session on this machine, newest first.
+
+`claude --resume` only offers sessions whose project directory matches $PWD.
+This walks ~/.claude/projects instead, so nothing gets lost just because it was
+started somewhere else.
+
+  claude-sessions              all sessions
+  claude-sessions notes        only those whose cwd or text matches "notes"
+  claude-sessions --big 10     the 10 largest, for finding what eats disk
+
+Resume one from anywhere:  claude --resume <id>
+"""
+import json
+import os
+import sys
+import time
+
+ROOT = os.path.expanduser("~/.claude/projects")
+
+
+def first_prompt(path, limit=4000):
+    """First real user message, skipping hook noise and command wrappers."""
+    try:
+        with open(path, errors="replace") as fh:
+            for i, line in enumerate(fh):
+                if i > 400:
+                    break
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if d.get("type") != "user":
+                    continue
+                c = d.get("message", {}).get("content")
+                if not isinstance(c, str):
+                    continue
+                c = c.strip()
+                if not c or c.startswith(("Stop hook feedback", "<local-command",
+                                          "<command-name", "Caveat:")):
+                    continue
+                return " ".join(c.split())[:limit]
+    except OSError:
+        pass
+    return ""
+
+
+def cwd_of(path):
+    try:
+        with open(path, errors="replace") as fh:
+            for i, line in enumerate(fh):
+                if i > 400:
+                    break
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if d.get("cwd"):
+                    return d["cwd"]
+    except OSError:
+        pass
+    return "?"
+
+
+def human(n):
+    for unit in ("B", "K", "M", "G"):
+        if n < 1024 or unit == "G":
+            return f"{n:.0f}{unit}" if unit == "B" else f"{n:.1f}{unit}"
+        n /= 1024
+
+
+def main():
+    args = [a for a in sys.argv[1:]]
+    big = 0
+    if "--big" in args:
+        i = args.index("--big")
+        big = int(args[i + 1]) if len(args) > i + 1 else 10
+        del args[i:i + 2]
+    needle = args[0].lower() if args else None
+
+    rows = []
+    for project in sorted(os.listdir(ROOT)):
+        pdir = os.path.join(ROOT, project)
+        if not os.path.isdir(pdir):
+            continue
+        for name in os.listdir(pdir):
+            if not name.endswith(".jsonl"):
+                continue
+            path = os.path.join(pdir, name)
+            st = os.stat(path)
+            rows.append({
+                "id": name[:-6],
+                "mtime": st.st_mtime,
+                "size": st.st_size,
+                "path": path,
+            })
+
+    rows.sort(key=lambda r: -r["size"] if big else -r["mtime"])
+    if big:
+        rows = rows[:big]
+
+    out = []
+    for r in rows:
+        r["cwd"] = cwd_of(r["path"])
+        r["first"] = first_prompt(r["path"])
+        if needle and needle not in (r["cwd"] + " " + r["first"]).lower():
+            continue
+        out.append(r)
+
+    if not out:
+        print("no sessions matched" if needle else "no sessions found")
+        return
+
+    total = sum(r["size"] for r in out)
+    for r in out:
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r["mtime"]))
+        home = os.path.expanduser("~")
+        cwd = r["cwd"].replace(home, "~", 1)
+        print(f"{when}  {human(r['size']):>7}  {cwd}")
+        print(f"                     {r['id']}")
+        if r["first"]:
+            print(f"                     {r['first'][:96]}")
+        print()
+    print(f"{len(out)} session(s), {human(total)}")
+
+
+if __name__ == "__main__":
+    main()

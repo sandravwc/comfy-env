@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+set -u
+
+start_dir="${1:-.}"
+
+file="$(
+  fd -t f \
+    -e jpg -e jpeg -e png -e gif -e webp -e avif -e bmp -e tiff -e tif -e svg \
+    . "${start_dir}" |
+  fzf \
+    --height=95% \
+    --layout=reverse \
+    --border \
+    --prompt='img> ' \
+    --preview 'bash -c '"'"'chafa --size "${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}" --clear --animate=off --polite on -- "$1"'"'"' _ {}' \
+    --preview-window='right:60%:wrap' \
+    --bind 'ctrl-o:execute-silent(bash -c '"'"'"'"'"'"'"'"'xdg-open "$1" >/dev/null 2>&1 &'"'"'"'"'"'"'"'"' _ {})' \
+    --header $'enter=select  ctrl-o=open  esc=quit'
+)" || exit 1
+
+[[ -z "${file}" ]] && exit 1
+
+dir="$(dirname -- "${file}")"
+ext="${file##*.}"
+stem="$(basename -- "${file}")"
+stem="${stem%.*}"
+outdir="${dir}/out"
+
+mkdir -p -- "${outdir}"
+
+printf '\n'
+printf 'Selected: %s\n' "${file}"
+printf '1) Resize\n'
+printf '2) Crop center\n'
+printf '3) Resize + crop to exact box\n'
+printf '4) Convert format\n'
+printf '5) Rename\n'
+printf '6) Open\n'
+printf '7) Print path\n'
+printf '8) Quit\n'
+
+read -r -p 'Action [1-8]: ' action
+
+case "${action}" in
+  1)
+    read -r -p 'Width (blank to skip): ' width
+    read -r -p 'Height (blank to skip): ' height
+    read -r -p 'Quality for jpg/webp/avif (default 92): ' quality
+    quality="${quality:-92}"
+
+    if [[ -n "${width}" && -n "${height}" ]]; then
+      magick "${file}" \
+        -resize "${width}x${height}" \
+        -quality "${quality}" \
+        "${outdir}/${stem}-resize-${width}x${height}.${ext}"
+    elif [[ -n "${width}" ]]; then
+      magick "${file}" \
+        -resize "${width}x" \
+        -quality "${quality}" \
+        "${outdir}/${stem}-resize-w${width}.${ext}"
+    elif [[ -n "${height}" ]]; then
+      magick "${file}" \
+        -resize "x${height}" \
+        -quality "${quality}" \
+        "${outdir}/${stem}-resize-h${height}.${ext}"
+    else
+      printf 'No dimensions given.\n' >&2
+      exit 1
+    fi
+    ;;
+  2)
+    read -r -p 'Crop size (e.g. 1200x800): ' cropgeom
+    read -r -p 'Gravity [Center/North/South/East/West] (default Center): ' gravity
+    gravity="${gravity:-Center}"
+
+    [[ -z "${cropgeom}" ]] && {
+      printf 'No crop geometry given.\n' >&2
+      exit 1
+    }
+
+    magick "${file}" \
+      -gravity "${gravity}" \
+      -crop "${cropgeom}+0+0" \
+      +repage \
+      "${outdir}/${stem}-crop-${cropgeom}.${ext}"
+    ;;
+  3)
+    read -r -p 'Target size (e.g. 1200x800): ' cropgeom
+    read -r -p 'Gravity [Center/North/South/East/West] (default Center): ' gravity
+    read -r -p 'Quality for jpg/webp/avif (default 92): ' quality
+
+    gravity="${gravity:-Center}"
+    quality="${quality:-92}"
+
+    [[ -z "${cropgeom}" ]] && {
+      printf 'No target size given.\n' >&2
+      exit 1
+    }
+
+    magick "${file}" \
+      -resize "${cropgeom}^" \
+      -gravity "${gravity}" \
+      -extent "${cropgeom}" \
+      -quality "${quality}" \
+      "${outdir}/${stem}-fit-${cropgeom}.${ext}"
+    ;;
+  4)
+    read -r -p 'Target format (jpg/png/webp/avif/etc): ' fmt
+    read -r -p 'Quality for lossy formats (default 92): ' quality
+
+    fmt="${fmt,,}"
+    quality="${quality:-92}"
+
+    [[ -z "${fmt}" ]] && {
+      printf 'No format given.\n' >&2
+      exit 1
+    }
+
+    magick "${file}" \
+      -quality "${quality}" \
+      "${outdir}/${stem}.${fmt}"
+    ;;
+  5)
+    read -r -p 'New base name (no extension): ' newname
+
+    [[ -z "${newname}" ]] && {
+      printf 'No name given.\n' >&2
+      exit 1
+    }
+
+    mv -- "${file}" "${dir}/${newname}.${ext}"
+    printf '%s\n' "${dir}/${newname}.${ext}"
+    ;;
+  6)
+    xdg-open "${file}" >/dev/null 2>&1 &
+    ;;
+  7)
+    printf '%s\n' "${file}"
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+
