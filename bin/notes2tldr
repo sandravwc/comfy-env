@@ -10,6 +10,8 @@ appends below the upstream examples.
   notes2tldr --list          show which notes match an official page
   notes2tldr --force         overwrite hand-written patches too
 
+Vault path: $FOAM_VAULT, else ~/workdir/notes.
+
 Vault bullets map straight onto tldr examples:
 
     - resize disk           ->   - resize disk:
@@ -25,7 +27,7 @@ import os
 import re
 import sys
 
-VAULT = os.path.expanduser("~/workdir/notes")
+VAULT = os.environ.get("FOAM_VAULT", os.path.expanduser("~/workdir/notes"))
 SUBDIR = "cheat sheet"
 CACHE = os.path.expanduser("~/.cache/tealdeer/tldr-pages")
 OUT = os.path.expanduser("~/.local/share/tealdeer/pages")

@@ -59,6 +59,9 @@ Targets whose config is unique keep an inline heredoc: `el7` bashrc/motd,
 
 Optional command line tools. Nothing installs these; copy the ones you want.
 
+`newnote` and `notes2tldr` default to `~/workdir/notes`; set `FOAM_VAULT` only
+if the vault lives elsewhere.
+
 ```sh
 install -m0755 bin/claude-sessions ~/.local/bin/
 ```

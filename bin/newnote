@@ -9,6 +9,8 @@ category is an orphan in the graph until its hub links it. This does both.
   newnote android/foo               android/foo.md + link in android.md
   newnote scratch                   scratch.md at the vault root, no hub
 
+Vault path: $FOAM_VAULT, else ~/workdir/notes.
+
 What it writes:
   - `title: <category>/<name>` frontmatter, matching the rest of the vault
   - a `- ` stub, because empty stubs are normal here
