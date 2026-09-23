@@ -104,6 +104,13 @@ def render(name, examples):
 
 def main():
     args = sys.argv[1:]
+    if any(a in ("-h", "--help", "help") for a in args):
+        print(__doc__.strip())
+        return
+    known = {"--dry-run", "--force", "--list"}
+    unknown = [a for a in args if a not in known]
+    if unknown:
+        sys.exit(f"unknown option(s): {' '.join(unknown)}; --help for usage")
     dry = "--dry-run" in args
     force = "--force" in args
     listing = "--list" in args

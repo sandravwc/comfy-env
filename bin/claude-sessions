@@ -91,6 +91,9 @@ def human(n):
 
 def main():
     args = [a for a in sys.argv[1:]]
+    if args and args[0] in ("-h", "--help", "help"):
+        print(__doc__.strip())
+        return
     big = 0
     if "--big" in args:
         i = args.index("--big")

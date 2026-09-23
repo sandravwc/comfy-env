@@ -26,10 +26,17 @@ VAULT = os.environ.get("FOAM_VAULT", os.path.expanduser("~/workdir/notes"))
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit(__doc__.strip().splitlines()[0] + "\n\nusage: newnote '<category>/<name>'")
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help", "help"):
+        print(__doc__.strip())
+        sys.exit(0 if args else 2)
+    if len(args) != 1:
+        sys.exit("usage: newnote '<category>/<name>'")
+    if args[0].startswith("-"):
+        sys.exit(f"refusing to create a page named {args[0]!r}; "
+                 "use -h for help")
 
-    rel = sys.argv[1].removesuffix(".md").strip("/")
+    rel = args[0].removesuffix(".md").strip("/")
     category, _, name = rel.rpartition("/")
     if not name:
         sys.exit("empty page name")
