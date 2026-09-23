@@ -1,6 +1,9 @@
 # comfy-env
 
-Shell environment bootstrap scripts: ble.sh, bashrc, nvim, atuin, screen, motd.
+Shell environment bootstrap scripts: ble.sh, bashrc, nvim, atuin, screen, and a
+fastfetch login summary. Nothing touches `/etc/motd` or `update-motd.d`; it only
+drops a `/etc/profile.d/motd.sh` that runs fastfetch, so an interactive login
+shows the essentials.
 One script per target, shared config payloads in `files/`, optional user tools in `bin/`. Clone the repo and run
 the script for the box — it copies out of `files/` next to it, so it is not a
 single-file curl target any more.
@@ -26,7 +29,7 @@ EL and Proxmox scripts run as root and install dnf-automatic / packages as neede
 | `init.vim` | `~/.config/nvim/init.vim` | all |
 | `screenrc` | `~/.screenrc` | all |
 | `atuin.toml` | `~/.config/atuin/config.toml` | all but termux |
-| `motd.sh` | `/etc/profile.d/motd.sh` | el, el-k8s, el-zfs (+ zpool-bar line) |
+| `motd.sh` | `/etc/profile.d/motd.sh`, fastfetch on login | el, el-k8s, el-zfs (+ zpool-bar line) |
 | `dnf-automatic.conf` | `/etc/dnf/automatic.conf` | el, el-zfs, el-k8s (`upgrade_type = security`) |
 | `dnf-automatic-timer.conf` | `dnf-automatic.timer.d/override.conf` | el, el-zfs, el-k8s |
 
