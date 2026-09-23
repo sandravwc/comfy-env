@@ -31,7 +31,8 @@ EL and Proxmox scripts run as root and install dnf-automatic / packages as neede
 | `dnf-automatic-timer.conf` | `dnf-automatic.timer.d/override.conf` | el, el-zfs, el-k8s |
 
 `@HOSTNAME@` in `dnf-automatic.conf` is substituted at install time. Edit
-`atuin.toml` (`sync_address`) before running.
+`atuin.toml` (`sync_address`) before running -- the committed value is a
+placeholder.
 
 Targets whose config is unique keep an inline heredoc: `el7` bashrc/motd,
 `proxmox` bashrc/motd, `termux` bashrc, `el-zfs` zpool-bar.

@@ -3,4 +3,4 @@ enter_accept = true
 records = true
 auto_sync = true
 sync_frequency = 0
-sync_address = "http://10.0.1.6:8888"
+sync_address = "http://atuin.example.internal:8888"
