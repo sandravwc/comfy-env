@@ -1,0 +1,5 @@
+termcapinfo xterm* ti@:te@
+logfile "screenlog_%S.log"
+deflog on
+# Alt+Enter (ESC CR) -> Ctrl+J: newline in Claude Code instead of submit
+bindkey "^[^M" stuff "^J"

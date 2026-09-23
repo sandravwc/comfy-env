@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS* && sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.epel.cloud|g' /etc/yum.repos.d/CentOS*
 yum install neovim bash-completion git -y
@@ -10,24 +11,7 @@ cd /root/workdir/ble.sh && make install INSDIR=/usr/local/lib/blesh
 curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
 
-cat <<- 'BASH_PROFILE' > /root/.bash_profile
-# exports paths and other variables first
-source "$HOME/.atuin/bin/env"
-export ATUIN_NOBIND="true"
-export PATH=$PATH:$HOME/bin
-export SYSTEMD_EDITOR=nvim
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
-export HISTTIMEFORMAT="%F %T "
-export HISTSIZE="100000"
-shopt -s histappend
-PROMPT_COMMAND='history -a'
-export LS_OPTIONS='--color=auto'
-# and then aliases and such
-if [[ -f ~/.bashrc ]]; then
-  source ~/.bashrc
-fi
-BASH_PROFILE
+install -Dm0644 "$DIR/files/bash_profile" /root/.bash_profile
 
 cat <<- 'BASHRC' > /root/.bashrc
 if [[ $- == *i* ]] # execute if in interactive shell
@@ -63,13 +47,7 @@ fi
 BASHRC
 
 mkdir -p /root/.config/nvim
-cat <<- 'INITVIM' > /root/.config/nvim/init.vim
-set number
-set expandtab ts=2 sw=2 ai
-set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
-set list
-set mouse=
-INITVIM
+install -Dm0644 "$DIR/files/init.vim" /root/.config/nvim/init.vim
 
 cat <<- 'MOTDSH' > /etc/profile.d/motd.sh
 #!/usr/bin/env bash
@@ -78,89 +56,11 @@ fastfetch \
   --structure kernel:os:packages:uptime:memory:cpu:disk:shell:localip:publicip
 MOTDSH
 
-cat <<- 'BLESHRC' > /root/.blerc
-ble-bind -f 'M-B' 'backward-cword'
-ble-bind -f 'M-F' 'forward-cword'
-bleopt complete_auto_complete=
-bleopt complete_auto_history=
-bleopt complete_ambiguous=
-bleopt prompt_eol_mark=''
-bleopt complete_menu_filter=
-# bash-completion pre-escapes rsync/scp local paths (scp style), ble.sh would quote them a second time
-function my/scp-dequote-compreply {
-  case ${COMP_WORDS[0]} in (rsync|scp) ;; (*) return 0 ;; esac
-  ((${#COMPREPLY[@]})) || return 0
-  # fzf wrapper calls the advised original -> runs twice per request
-  [[ $_my_scp_dequoted == "$COMP_LINE:$COMP_POINT" ]] && return 0
-  _my_scp_dequoted=$COMP_LINE:$COMP_POINT
-  local i ret
-  for i in "${!COMPREPLY[@]}"; do
-    ble/syntax:bash/simple-word/eval "${COMPREPLY[i]% }" && COMPREPLY[i]=$ret
-  done
-}
-function my/adjust-scp-completions {
-  case $comp_func in
-  (_comp_cmd_rsync|_comp_cmd_scp|_rsync|_scp|_fzf_path_completion)
-    ble/function#advice after "$comp_func" my/scp-dequote-compreply ;;
-  esac
-}
-blehook complete_load!='ble/function#advice after ble/complete/progcomp/adjust-third-party-completions my/adjust-scp-completions'
+install -Dm0644 "$DIR/files/blerc" /root/.blerc
 
-# complete_requote_threshold compares the quoted length with the escaped one; a single special char loses by one -> discount the two quotes
-function my/patch-requote-threshold {
-  local def; def=$(declare -f ble/complete/action/requote-final-insert)
-  builtin eval -- "${def/'((${#ret}+threshold<=${#ins}))'/'((${#ret}-2+threshold<=${#ins}))'}"
-}
+install -Dm0644 "$DIR/files/atuin.toml" /root/.config/atuin/config.toml
 
-# ambiguous completion inserts the common prefix backslash-escaped, requote as an open '...
-function my/requote-common-insert {
-  [[ " ${ADVICE_FUNCNAME[*]} " == *' ble/complete/insert-common '* ]] && ((cand_count>1)) || return 0
-  local word=${ADVICE_WORDS[3]}
-  [[ $word != "$COMPS" && $word == *\\* && $COMPS != *[\\\$\`~=:{]* && $comps_flags != *[SEDI]* ]] || return 0
-  local ret simple_flags simple_ibrace count
-  ble/syntax:bash/simple-word/reconstruct-incomplete-word "$word" &&
-    ble/complete/source/eval-simple-word "$ret" single:count && ((count==1)) || return 0
-  local q=\' Q="'\\''"
-  ADVICE_WORDS[3]=$q${ret//$q/$Q}
-}
-blehook complete_load!='my/patch-requote-threshold; ble/function#advice before ble/complete/insert my/requote-common-insert'
-
-# menu-complete (tab-tab cycling) inserts the raw escaped candidate, requote like the final insert
-function my/requote-menu-selection {
-  local nsel=${ADVICE_WORDS[1]}
-  ((nsel>=0)) && [[ :$bleopt_complete_menu_complete_opts: == *:insert-selection:* ]] || return 0
-  local COMP1=${_ble_complete_menu0_comp[0]} COMP2=${_ble_complete_menu0_comp[1]}
-  local COMPS=${_ble_complete_menu0_comp[2]} COMPV=${_ble_complete_menu0_comp[3]}
-  local comp_type=${_ble_complete_menu0_comp[4]} comps_flags=${_ble_complete_menu0_comp[5]} comps_fixed=${_ble_complete_menu0_comp[6]}
-  local "${_ble_complete_cand_varnames[@]/%/=}"
-  ble/complete/cand/unpack "${_ble_complete_menu_items[nsel]}"
-  local insert=$INSERT insert_flags= suffix=
-  ble/complete/action/requote-final-insert
-  [[ $insert != "$INSERT" ]] || return 0
-  ble-edit/content/replace-limited "$_ble_complete_menu0_beg" "$_ble_edit_ind" "$insert"
-  ((_ble_edit_ind=_ble_complete_menu0_beg+${#insert}))
-}
-blehook complete_load!='ble/function#advice after ble/complete/menu-complete.class/onselect my/requote-menu-selection'
-ble-import -d integration/fzf-completion
-ble-import -d integration/fzf-key-bindings
-BLESHRC
-
-cat <<- 'ATUIN' > "/root/.config/atuin/config.toml"
-style = "full"
-enter_accept = true
-records = true
-auto_sync = true
-sync_frequency = 0
-sync_address = "http://10.0.1.6:8888"
-ATUIN
-
-cat <<- 'SCREENRC' > /root/.screenrc
-termcapinfo xterm* ti@:te@
-logfile "screenlog_%S.log"
-deflog on
-# Alt+Enter (ESC CR) -> Ctrl+J: newline in Claude Code instead of submit
-bindkey "^[^M" stuff "^J"
-SCREENRC
+install -Dm0644 "$DIR/files/screenrc" /root/.screenrc
 
 rm -f /root/anaconda-ks.cfg /root/changelog.txt /root/original-ks.cfg /root/postinstall.sh /root/bat.zip
 rm -rf /root/workdir/ble.sh
