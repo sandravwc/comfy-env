@@ -13,6 +13,7 @@ Resume one from anywhere:  claude --resume <id>
 """
 import json
 import os
+import re
 import sys
 import time
 
@@ -43,6 +44,25 @@ def first_prompt(path, limit=4000):
     except OSError:
         pass
     return ""
+
+
+def stats(path):
+    """(turn count, first ts, last ts) - cheap scan of the transcript."""
+    turns = first = last = 0
+    try:
+        with open(path, errors="replace") as fh:
+            for line in fh:
+                if '"type":"user"' not in line and '"type": "user"' not in line:
+                    continue
+                turns += 1
+                m = re.search(r'"timestamp":"([^"]+)"', line)
+                if m:
+                    if not first:
+                        first = m.group(1)
+                    last = m.group(1)
+    except OSError:
+        pass
+    return turns, first, last
 
 
 def cwd_of(path):
@@ -103,6 +123,7 @@ def main():
     for r in rows:
         r["cwd"] = cwd_of(r["path"])
         r["first"] = first_prompt(r["path"])
+        r["turns"], r["start"], _ = stats(r["path"])
         if needle and needle not in (r["cwd"] + " " + r["first"]).lower():
             continue
         out.append(r)
@@ -116,7 +137,8 @@ def main():
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r["mtime"]))
         home = os.path.expanduser("~")
         cwd = r["cwd"].replace(home, "~", 1)
-        print(f"{when}  {human(r['size']):>7}  {cwd}")
+        tail = f"{human(r['size']):>7}" if big else f"{r['turns']:>4} turns"
+        print(f"{when}  {tail}  {cwd}")
         print(f"                     {r['id']}")
         if r["first"]:
             print(f"                     {r['first'][:96]}")
