@@ -6,7 +6,23 @@ fastfetch login summary — a `/etc/profile.d/motd.sh`, not `/etc/motd` or
 
 One script per target, shared config payloads in `files/`, optional user tools
 in `bin/`. Clone the repo and run the script for the box; it copies out of
-`files/` next to it, so it is not a single-file curl target any more.
+`files/` next to it, so there is no longer a single-file curl-to-shell install
+of the script itself. The scripts do still fetch from the internet, see below.
+
+## what it fetches
+
+Run as root, these pull from outside the distro repos. Read before executing:
+
+| source | what | where |
+|---|---|---|
+| `git clone github.com/akinomyoga/ble.sh` | built from source | all |
+| `curl https://setup.atuin.sh \| sh` | upstream installer, piped to a shell | all but termux |
+| `curl https://alessandromrc.github.io/fastfetch-installer/installer.sh \| bash` | third party, not the fastfetch project | proxmox |
+| `bat` 0.7.1, `fastfetch` 1.6.3 release binaries, fzf clone | pinned old versions, no repo package on EL7 | el7 |
+| CentOS 7 repos repointed to `vault.epel.cloud` | EL7 is EOL, mirrorlist is dead | el7 |
+
+The ble.sh clone is removed again at the end of each script, except `proxmox.sh`
+which leaves it in `/root/workdir/ble.sh`.
 
 | script | target |
 |---|---|
