@@ -93,13 +93,17 @@ def blocks(path):
     for raw in open(path, errors="replace"):
         line = raw.rstrip("\n")
         if body is None:
+            # a fence may itself be a bullet (`- ```sh`): Logseq wrote code
+            # blocks as child bullets and the migration kept both shapes.
+            # Check for a fence first, or it is taken for a label.
+            m = re.match(r"^\s*(?:- )?```([a-zA-Z]*)\s*$", line)
+            if m:
+                if label:
+                    lang, body = m.group(1).lower(), []
+                continue
             m = re.match(r"^- (.+?):?\s*$", line)
             if m:
                 label = m.group(1).strip()
-                continue
-            m = re.match(r"^\s*```([a-zA-Z]*)\s*$", line)
-            if m and label:
-                lang, body = m.group(1).lower(), []
             continue
         if re.match(r"^\s*```\s*$", line):
             out.append((label, lang, body))
