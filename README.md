@@ -82,7 +82,7 @@ install -m0755 bin/claude-sessions ~/.local/bin/
 |---|---|---|
 | `claude-sessions` | list every Claude Code session on the machine, newest first, with cwd and opening prompt -- `claude --resume` only offers sessions matching `$PWD` | python3 |
 | `imgtool` | pick an image with fd+fzf (chafa preview), then convert / resize / rename / open | fd, fzf, chafa, imagemagick |
-| `notes2tldr` | turn `cheat sheet/*.md` notes into tealdeer `.patch.md` pages, appended below the official tldr examples | python3, tealdeer |
+| `notes2tldr` | turn `cheat sheet/*.md` notes into tealdeer `.patch.md` pages, appended below the official tldr examples. Only flat command lists convert; multi-line programs, non-shell fences and command output are skipped | python3, tealdeer |
 | `newnote` | create a Foam vault page with this vault's frontmatter and link it from its category hub (Foam has no post-create hook, so the hub link is manual otherwise) | python3 |
 
 Server side utilities that every box of that type wants (`zpool-bar` on ZFS

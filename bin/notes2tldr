@@ -27,6 +27,7 @@ description.
 """
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -68,52 +69,112 @@ def official_pages():
     return names
 
 
-def parse(path):
-    """-> [(description, command)] from `- label` bullets with fenced blocks."""
+def balanced(text):
+    """True when quotes are closed and braces match: a complete command."""
+    try:
+        lex = shlex.shlex(text, posix=True)
+        lex.whitespace_split = True
+        list(lex)
+    except ValueError:
+        return False
+    return text.count("{") == text.count("}")
+
+
+SHELL_FENCES = ("", "sh", "bash", "shell", "console")
+
+
+def blocks(path):
+    """-> [(label, lang, [lines])] for every fenced block under a `- ` bullet."""
     out = []
     label = None
-    in_block = False
-    pending_comment = None
-    buf = ""
+    lang = None
+    body = None
 
     for raw in open(path, errors="replace"):
         line = raw.rstrip("\n")
-
-        if not in_block:
+        if body is None:
             m = re.match(r"^- (.+?):?\s*$", line)
             if m:
                 label = m.group(1).strip()
                 continue
-            if re.match(r"^\s*```", line) and label:
-                in_block = True
-                pending_comment = None
-                buf = ""
+            m = re.match(r"^\s*```([a-zA-Z]*)\s*$", line)
+            if m and label:
+                lang, body = m.group(1).lower(), []
             continue
-
         if re.match(r"^\s*```\s*$", line):
-            in_block = False
+            out.append((label, lang, body))
+            body = None
             continue
+        body.append(line)
 
+    return out
+
+
+def examples_from(label, lines):
+    """-> [(description, command)] or [] when the block is not a command list.
+
+    A tldr example is one command, so a block holding a multi-line program (an
+    awk or jq script, a shell loop) is dropped whole rather than shredded into
+    one bogus example per line. It stays readable in the notes instead.
+    """
+    # `$ cmd` anywhere means an interactive transcript: the unprompted lines
+    # are that command's output, not commands of their own.
+    transcript = any(l.strip().startswith("$ ") for l in lines)
+    if transcript:
+        lines = [l.strip()[2:] for l in lines if l.strip().startswith("$ ")]
+
+    out = []
+    buf = ""
+    folded = 0
+    comment = None
+
+    for line in lines:
         body = line.strip()
         if not body:
             continue
         if body.startswith("#"):
-            pending_comment = body.lstrip("# ").strip()
+            if not buf:
+                comment = body.lstrip("# ").strip()
             continue
 
-        # join backslash continuations
-        buf = (buf + " " + body).strip() if buf else body
+        # unprompted command output, e.g. `/dev/mapper/x: UUID="..." TYPE=...`
+        # no command's first word ends in a colon
+        if not buf and body.split()[0].endswith(":"):
+            continue
+
         if buf.endswith("\\"):
-            buf = buf[:-1].rstrip()
-            continue
+            buf = buf[:-1].rstrip() + " " + body
+        elif buf:
+            buf += " " + body
+            folded += 1
+        else:
+            buf = body
 
-        desc = label
-        if pending_comment:
-            desc = f"{label} — {pending_comment}"
+        if buf.endswith("\\"):
+            continue
+        if not balanced(buf):
+            folded += 1
+            if folded > 4:
+                return []          # a program, not a command
+            continue
+        if folded:
+            return []              # needed several plain lines: a program
+
+        desc = f"{label} — {comment}" if comment else label
         out.append((desc, " ".join(buf.split())))
         buf = ""
-        pending_comment = None
+        folded = 0
+        comment = None
 
+    return [] if buf else out
+
+
+def parse(path):
+    out = []
+    for label, lang, lines in blocks(path):
+        if lang not in SHELL_FENCES:
+            continue
+        out.extend(examples_from(label, lines))
     return out
 
 
