@@ -67,6 +67,7 @@ install -m0755 bin/claude-sessions ~/.local/bin/
 |---|---|---|
 | `claude-sessions` | list every Claude Code session on the machine, newest first, with cwd and opening prompt -- `claude --resume` only offers sessions matching `$PWD` | python3 |
 | `imgtool` | pick an image with fd+fzf (chafa preview), then convert / resize / rename / open | fd, fzf, chafa, imagemagick |
+| `notes2tldr` | turn `cheat sheet/*.md` notes into tealdeer `.patch.md` pages, appended below the official tldr examples | python3, tealdeer |
 
 Server side utilities that every box of that type wants (`zpool-bar` on ZFS
 hosts) stay in their bootstrap script instead -- they are not optional there.
