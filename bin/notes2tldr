@@ -165,7 +165,13 @@ def examples_from(label, lines):
             return []              # needed several plain lines: a program
 
         desc = f"{label} — {comment}" if comment else label
-        out.append((desc, " ".join(buf.split())))
+        cmd = " ".join(buf.split())
+        # several commands under one bullet stack under a single description
+        # instead of repeating the label once per line
+        if out and out[-1][0] == desc:
+            out[-1][1].append(cmd)
+        else:
+            out.append((desc, [cmd]))
         buf = ""
         folded = 0
         comment = None
@@ -184,13 +190,15 @@ def parse(path):
 
 def render(name, examples):
     lines = [MARK, "", f"- from notes: {SUBDIR}/{name}", ""]
-    for desc, cmd in examples:
-        if "`" in cmd:  # backticks would break the fence
+    for desc, cmds in examples:
+        cmds = [c for c in cmds if "`" not in c]  # backticks break the fence
+        if not cmds:
             continue
         lines.append(f"- {desc.rstrip(':')}:")
         lines.append("")
-        lines.append(f"`{cmd}`")
-        lines.append("")
+        for cmd in cmds:                 # consecutive blocks render stacked
+            lines.append(f"`{cmd}`")
+            lines.append("")
     return "\n".join(lines)
 
 
@@ -233,7 +241,9 @@ def main():
 
         examples = parse(os.path.join(src, f))
         if listing:
-            print(f"  ok   {name}: {len(examples)} example(s)")
+            n = sum(len(c) for _, c in examples)
+            print(f"  ok   {name}: {n} command(s) in "
+                  f"{len(examples)} example(s)")
             continue
         if not examples:
             continue
@@ -252,7 +262,8 @@ def main():
         else:
             with open(dest, "w") as fh:
                 fh.write(body)
-            print(f"wrote {name}.patch.md ({len(examples)} example(s))")
+            n = sum(len(c) for _, c in examples)
+            print(f"wrote {name}.patch.md ({n} command(s))")
         written += 1
 
     if not listing:
